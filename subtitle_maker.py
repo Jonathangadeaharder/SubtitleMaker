@@ -4,6 +4,8 @@ import whisper
 import torch
 import sys
 from pydub import AudioSegment
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
 
 # Main function
 def main(video_file, language):
@@ -24,19 +26,13 @@ def main(video_file, language):
     # Step 2: Check audio duration and decide on duplication
     audio_segment = AudioSegment.from_file(audio_file)
     audio_duration = len(audio_segment) / 1000  # Duration in seconds
-    print("audio_duration", audio_duration)
     if audio_duration < 300:  # Duplicate if the audio is <= 5 minutes
-        print("Duplicating 10 seconds from the middle...")
         middle_start = max(0, (audio_duration / 2) - 5) * 1000  # Middle point minus 5 seconds in milliseconds
-        print("middle_start", middle_start)
         middle_end = min(audio_duration * 1000, middle_start + 10000)  # 10 seconds in milliseconds
-        print("middle_end", middle_end)
         middle_chunk = audio_segment[middle_start:middle_end]  # 10-second chunk from the middle
         duplicated_audio = middle_chunk + audio_segment
         duplicated_audio.export(temp_audio_file, format="ogg")
-        print("10 seconds from the middle duplicated.")
     else:
-        print("Audio duration is above 5 minutes. Skipping duplication...")
         temp_audio_file = audio_file
 
     # Step 3: Transcribe audio with Whisper
@@ -69,17 +65,13 @@ def remove_duplicate_segment(sentences, duplicate_duration):
     """Remove subtitles from duplicated segment at the beginning and adjust timestamps."""
     adjusted_segments = []
     for segment in sentences:
-        print(segment)
         if segment['start'] <= duplicate_duration:
-            # Skip segments from the duplicated part at the beginning
             continue
         else:
-            # Shift timestamps for segments after the duplicated part
             adjusted_segment = segment.copy()
             adjusted_segment['start'] -= duplicate_duration
             adjusted_segment['end'] -= duplicate_duration
             adjusted_segments.append(adjusted_segment)
-            print(adjusted_segment)
     return adjusted_segments
 
 # Helper functions
@@ -107,9 +99,15 @@ def estimate_end_time(start_time, text, words_per_minute=100):
 
 # Run main if script is executed
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python subtitle_script.py <video_file> [language]")
+    # Hide the root window
+    Tk().withdraw()
+    # Open file dialog
+    video_file = askopenfilename(title="Select Video File", filetypes=[("Video Files", "*.mp4 *.avi *.mov *.mkv")])
+    if not video_file:
+        print("No file selected. Exiting...")
+        sys.exit(1)
+    if(len(sys.argv) < 2):
+        language = input("Please provide language code: ")
     else:
-        video_file = sys.argv[1]
-        language = sys.argv[2]
-        main(video_file, language)
+        language =sys.argv[1]
+    main(video_file, language)
