@@ -1,7 +1,7 @@
 import os
-from moviepy.editor import VideoFileClip, concatenate_videoclips
+import warnings
+from moviepy import VideoFileClip
 import whisper
-import torch
 import sys
 from pydub import AudioSegment
 from tkinter import Tk
@@ -14,7 +14,9 @@ def main(video_file, language):
     temp_audio_file = os.path.join(script_dir, "temp_audio_with_duplicate.ogg")
     audio_file = os.path.join(script_dir, "extracted_audio.ogg")
 
-    model = whisper.load_model("turbo", device='cuda')
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        model = whisper.load_model("turbo", device='cuda')
 
     # Step 1: Extract audio from the video
     print("Starting audio extraction...")
